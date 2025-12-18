@@ -8,12 +8,14 @@ import {
     KeyboardAvoidingView,
     Platform,
     Dimensions,
+    Image,
     Keyboard,
     TouchableWithoutFeedback,
     ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
+import { useRouter } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -116,6 +118,13 @@ export default function SignInScreen() {
     const emailInputRef = React.useRef<TextInput>(null);
     const passwordInputRef = React.useRef<TextInput>(null);
 
+    const router = useRouter();
+
+    const handleSignIn = () => {
+        // Implement sign-in logic here
+        console.log('Signing in with:', { email, password });
+        router.replace('/(tabs)');
+    };
     const handleLogin = () => {
         Keyboard.dismiss();
         console.log('Login:', { email, password });
@@ -175,11 +184,11 @@ export default function SignInScreen() {
                         {/* Logo/Brand Area */}
                         <View style={styles.logoContainer}>
                             <View style={styles.logoCircle}>
-                                <MapIcon size={35} color="#0f8fd5" />
+                                <Image source={require('../../assets/images/icon.png')} style={styles.logo} />
                             </View>
-                            <Text style={styles.brandText}>TrackMe</Text>
-                            <Text style={styles.welcomeText}>GPS Tracker</Text>
-                            <Text style={styles.subtitleText}>Track. Monitor. Stay Safe.</Text>
+                            <Text style={styles.brandText}>Sonic Delivery</Text>
+                            <Text style={styles.welcomeText}>Delivery man app</Text>
+                            <Text style={styles.subtitleText}>Track. Deliver. Get paid</Text>
                         </View>
 
                         {/* Login Card */}
@@ -268,7 +277,7 @@ export default function SignInScreen() {
                                 {/* Login Button */}
                                 <TouchableOpacity
                                     style={styles.loginButton}
-                                    onPress={handleLogin}
+                                    onPress={handleSignIn}
                                     activeOpacity={0.8}>
                                     <LinearGradient
                                         colors={['#0f8fd5', '#0a6ba8']}
@@ -324,6 +333,11 @@ const styles = StyleSheet.create({
         right: 0,
         top: 0,
         bottom: 0,
+    },
+    logo: {
+        width: 50,
+        height: 50,
+        marginBottom: 0,
     },
     mapPattern: {
         position: 'absolute',

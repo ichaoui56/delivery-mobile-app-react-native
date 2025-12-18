@@ -1,226 +1,524 @@
+"use client"
 
-import React from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, ScrollView, SafeAreaView } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { useState } from "react"
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  ScrollView,
+  SafeAreaView,
+  TextInput,
+  Modal,
+  Alert,
+} from "react-native"
+import { useLocalSearchParams, useRouter } from "expo-router"
+import { MaterialCommunityIcons } from "@expo/vector-icons"
+import { LinearGradient } from "expo-linear-gradient"
+
+interface ReasonModalState {
+  visible: boolean
+  type: "delay" | "cancel" | null
+}
 
 const OrderDetailsScreen = () => {
-  const { id } = useLocalSearchParams();
-  const router = useRouter();
+  const { id } = useLocalSearchParams()
+  const router = useRouter()
+  const [reasonModal, setReasonModal] = useState<ReasonModalState>({ visible: false, type: null })
+  const [reasonText, setReasonText] = useState("")
 
-  // Dummy data - replace with actual data fetching
   const order = {
     id: id,
     orderId: `ORD${id}`,
-    customerName: 'John Doe',
-    deliveryAddress: '123 Main St, Anytown, USA',
-    status: 'In Progress',
-    estimatedDelivery: '11:00 AM',
+    customerName: "John Doe",
+    deliveryAddress: "123 Main St, Anytown, USA",
+    status: "In Progress",
+    estimatedDelivery: "11:00 AM",
     items: [
-      { id: '1', name: 'Product A', quantity: 2, price: 10 },
-      { id: '2', name: 'Product B', quantity: 1, price: 25 },
+      { id: "1", name: "Product A", quantity: 2, price: 10 },
+      { id: "2", name: "Product B", quantity: 1, price: 25 },
     ],
     totalPrice: 45,
-    instructions: 'Leave at the front door.',
-  };
+    instructions: "Leave at the front door.",
+    latitude: 40.7128,
+    longitude: -74.006,
+  }
 
-  const handleUpdateStatus = (newStatus: string) => {
-    console.log(`Updating status for order ${id} to ${newStatus}`);
-    // Add logic to update status
-  };
+  const handleOpenReasonModal = (type: "delay" | "cancel") => {
+    setReasonModal({ visible: true, type })
+    setReasonText("")
+  }
+
+  const handleSubmitReason = () => {
+    if (reasonText.trim()) {
+      const action = reasonModal.type === "delay" ? "DELAYED" : "CANCELLED"
+      Alert.alert("Confirmed", `Order has been marked as ${action}.\n\nReason: ${reasonText}`, [
+        { text: "OK", onPress: () => setReasonModal({ visible: false, type: null }) },
+      ])
+      setReasonText("")
+    } else {
+      Alert.alert("Please enter a reason before submitting.")
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#fff" />
+          <MaterialCommunityIcons name="arrow-left" size={24} color="#FFFFFF" />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Order Details</Text>
+        <View style={styles.headerPlaceholder} />
       </View>
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
+      <ScrollView contentContainerStyle={styles.scrollContainer} showsVerticalScrollIndicator={false}>
+        {/* Order Status Card */}
+        <LinearGradient colors={["#E3F2FD", "#F0F8FF"]} style={styles.statusCard}>
+          <View style={styles.statusContent}>
+            <View>
+              <Text style={styles.orderId}>{order.orderId}</Text>
+              <Text style={styles.statusLabel}>{order.status}</Text>
+            </View>
+            <View style={styles.statusIcon}>
+              <MaterialCommunityIcons name="truck-fast" size={28} color="#0f8fd5" />
+            </View>
+          </View>
+          <View style={styles.deliveryInfo}>
+            <MaterialCommunityIcons name="clock" size={16} color="#0f8fd5" />
+            <Text style={styles.deliveryTime}>Est. Delivery: {order.estimatedDelivery}</Text>
+          </View>
+        </LinearGradient>
+
+        {/* Customer Information */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Customer Information</Text>
-          <Text style={styles.infoText}><Text style={styles.bold}>Name:</Text> {order.customerName}</Text>
-          <Text style={styles.infoText}><Text style={styles.bold}>Address:</Text> {order.deliveryAddress}</Text>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="account" size={18} color="#0f8fd5" />
+            <Text style={styles.infoText}>{order.customerName}</Text>
+          </View>
+          <View style={styles.infoRow}>
+            <MaterialCommunityIcons name="map-marker" size={18} color="#0f8fd5" />
+            <Text style={styles.infoText}>{order.deliveryAddress}</Text>
+          </View>
         </View>
 
+        {/* Order Items */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Order Summary</Text>
           {order.items.map((item) => (
             <View key={item.id} style={styles.itemRow}>
-              <Text style={styles.itemName}>{item.name} (x{item.quantity})</Text>
-              <Text style={styles.itemPrice}>${item.price * item.quantity}</Text>
+              <View style={styles.itemInfo}>
+                <Text style={styles.itemName}>{item.name}</Text>
+                <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
+              </View>
+              <Text style={styles.itemPrice}>${(item.price * item.quantity).toFixed(2)}</Text>
             </View>
           ))}
+          <View style={styles.divider} />
           <View style={styles.totalRow}>
-            <Text style={styles.totalText}>Total</Text>
-            <Text style={styles.totalPrice}>${order.totalPrice}</Text>
+            <Text style={styles.totalLabel}>Total</Text>
+            <Text style={styles.totalPrice}>${order.totalPrice.toFixed(2)}</Text>
           </View>
         </View>
 
+        {/* Instructions */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Instructions</Text>
-          <Text style={styles.infoText}>{order.instructions}</Text>
+          <Text style={styles.cardTitle}>Delivery Instructions</Text>
+          <View style={styles.instructionBox}>
+            <MaterialCommunityIcons name="information" size={16} color="#0f8fd5" />
+            <Text style={styles.instructionText}>{order.instructions}</Text>
+          </View>
         </View>
 
+        {/* Action Buttons */}
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={[styles.actionButton, styles.acceptButton]}>
+            <MaterialCommunityIcons name="check" size={20} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>Accept Order</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, styles.navigateButton]}>
+            <MaterialCommunityIcons name="navigation" size={20} color="#FFFFFF" />
             <Text style={styles.actionButtonText}>Navigate</Text>
           </TouchableOpacity>
         </View>
 
-        <View style={styles.statusUpdateContainer}>
-          <Text style={styles.statusUpdateTitle}>Update Status</Text>
-          <View style={styles.statusButtons}>
-            <TouchableOpacity style={styles.statusButton} onPress={() => handleUpdateStatus('Picked Up')}>
+        {/* Status Update Section */}
+        <View style={styles.card}>
+          <Text style={styles.cardTitle}>Update Status</Text>
+          <View style={styles.statusButtonsGrid}>
+            <TouchableOpacity style={[styles.statusButton, styles.statusButtonPrimary]}>
+              <MaterialCommunityIcons name="package-up" size={18} color="#FFFFFF" />
               <Text style={styles.statusButtonText}>Picked Up</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.statusButton} onPress={() => handleUpdateStatus('Delivered')}>
+            <TouchableOpacity style={[styles.statusButton, styles.statusButtonSuccess]}>
+              <MaterialCommunityIcons name="check-circle" size={18} color="#FFFFFF" />
               <Text style={styles.statusButtonText}>Delivered</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.statusButton, styles.cancelButton]} onPress={() => handleUpdateStatus('Cancelled')}>
+          </View>
+
+          <View style={styles.statusButtonsGrid}>
+            <TouchableOpacity
+              style={[styles.statusButton, styles.statusButtonWarning]}
+              onPress={() => handleOpenReasonModal("delay")}
+            >
+              <MaterialCommunityIcons name="clock-alert" size={18} color="#FFFFFF" />
+              <Text style={styles.statusButtonText}>Delay</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.statusButton, styles.statusButtonDanger]}
+              onPress={() => handleOpenReasonModal("cancel")}
+            >
+              <MaterialCommunityIcons name="close-circle" size={18} color="#FFFFFF" />
               <Text style={styles.statusButtonText}>Cancel</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
+
+      {/* Reason Modal */}
+      <Modal visible={reasonModal.visible} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {reasonModal.type === "delay" ? "Delay Reason" : "Cancellation Reason"}
+              </Text>
+              <TouchableOpacity onPress={() => setReasonModal({ visible: false, type: null })}>
+                <MaterialCommunityIcons name="close" size={24} color="#1A1A1A" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.modalBody}>
+              <Text style={styles.modalLabel}>Please provide a reason:</Text>
+              <TextInput
+                style={styles.reasonInput}
+                placeholder="Enter your reason here..."
+                placeholderTextColor="#999"
+                multiline
+                numberOfLines={4}
+                value={reasonText}
+                onChangeText={setReasonText}
+                textAlignVertical="top"
+              />
+            </View>
+
+            <View style={styles.modalFooter}>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={() => setReasonModal({ visible: false, type: null })}
+              >
+                <Text style={styles.modalButtonTextCancel}>Cancel</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalButtonSubmit} onPress={handleSubmitReason}>
+                <Text style={styles.modalButtonTextSubmit}>Submit</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: "#FFFFFF",
   },
   header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#0586b5',
-    padding: 20,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
+    backgroundColor: "#0f8fd5",
+    paddingHorizontal: 16,
+    paddingVertical: 16,
   },
   backButton: {
-    marginRight: 20,
+    padding: 8,
   },
   headerTitle: {
-    fontSize: 22,
-    fontWeight: 'bold',
-    color: '#fff',
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+  headerPlaceholder: {
+    width: 40,
   },
   scrollContainer: {
-    padding: 15,
+    paddingHorizontal: 16,
+    paddingTop: 16,
+    paddingBottom: 24,
   },
-  card: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 20,
-    marginBottom: 15,
-    shadowColor: '#000',
+  statusCard: {
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
-    shadowRadius: 5,
+    shadowRadius: 6,
     elevation: 3,
   },
+  statusContent: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 12,
+  },
+  orderId: {
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#0f8fd5",
+    marginBottom: 4,
+  },
+  statusLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1A1A1A",
+  },
+  statusIcon: {
+    width: 56,
+    height: 56,
+    borderRadius: 12,
+    backgroundColor: "#FFFFFF",
+    justifyContent: "center",
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  deliveryInfo: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
+  deliveryTime: {
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#0f8fd5",
+  },
+  card: {
+    backgroundColor: "#F9F9F9",
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 16,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
   cardTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0586b5',
-    marginBottom: 15,
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#0f8fd5",
+    marginBottom: 12,
+  },
+  infoRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: 10,
+    gap: 10,
   },
   infoText: {
-    fontSize: 16,
-    color: '#333',
-    marginBottom: 5,
-  },
-  bold: {
-    fontWeight: 'bold',
+    fontSize: 14,
+    color: "#1A1A1A",
+    flex: 1,
   },
   itemRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: 8,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingVertical: 10,
     borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    borderBottomColor: "#E8E8E8",
+  },
+  itemInfo: {
+    flex: 1,
   },
   itemName: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1A1A1A",
+    marginBottom: 2,
+  },
+  itemQuantity: {
+    fontSize: 12,
+    color: "#666",
   },
   itemPrice: {
-    fontSize: 16,
-    color: '#333',
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#0f8fd5",
+  },
+  divider: {
+    height: 1,
+    backgroundColor: "#E8E8E8",
+    marginVertical: 8,
   },
   totalRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 10,
-    marginTop: 5,
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingTop: 8,
   },
-  totalText: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
+  totalLabel: {
+    fontSize: 15,
+    fontWeight: "bold",
+    color: "#1A1A1A",
   },
   totalPrice: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#0586b5',
+    fontSize: 16,
+    fontWeight: "bold",
+    color: "#0f8fd5",
+  },
+  instructionBox: {
+    flexDirection: "row",
+    backgroundColor: "#E3F2FD",
+    borderRadius: 12,
+    padding: 12,
+    gap: 8,
+  },
+  instructionText: {
+    fontSize: 13,
+    color: "#1A1A1A",
+    flex: 1,
   },
   actionsContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    marginVertical: 15,
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 16,
   },
   actionButton: {
     flex: 1,
-    padding: 15,
-    borderRadius: 10,
-    alignItems: 'center',
-    marginHorizontal: 5,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 14,
+    borderRadius: 12,
+    gap: 8,
   },
   acceptButton: {
-    backgroundColor: '#28a745',
+    backgroundColor: "#28a745",
   },
   navigateButton: {
-    backgroundColor: '#17a2b8',
+    backgroundColor: "#0f8fd5",
   },
   actionButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: 'bold',
+    color: "#FFFFFF",
+    fontSize: 14,
+    fontWeight: "bold",
   },
-  statusUpdateContainer: {
-    marginTop: 10,
-  },
-  statusUpdateTitle: {
-    fontSize: 18,
-    fontWeight: 'bold',
-    color: '#333',
-    textAlign: 'center',
-    marginBottom: 15,
-  },
-  statusButtons: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  statusButtonsGrid: {
+    flexDirection: "row",
+    gap: 10,
+    marginBottom: 10,
   },
   statusButton: {
-    backgroundColor: '#0586b5',
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     paddingVertical: 12,
-    paddingHorizontal: 20,
     borderRadius: 10,
+    gap: 6,
   },
-  cancelButton: {
-    backgroundColor: '#dc3545',
+  statusButtonPrimary: {
+    backgroundColor: "#0f8fd5",
+  },
+  statusButtonSuccess: {
+    backgroundColor: "#28a745",
+  },
+  statusButtonWarning: {
+    backgroundColor: "#FFA500",
+  },
+  statusButtonDanger: {
+    backgroundColor: "#dc3545",
   },
   statusButtonText: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: 'bold',
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "bold",
   },
-});
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0, 0, 0, 0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#FFFFFF",
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    paddingTop: 20,
+    paddingBottom: 24,
+    maxHeight: "80%",
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    paddingHorizontal: 20,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: "#F0F0F0",
+  },
+  modalTitle: {
+    fontSize: 18,
+    fontWeight: "bold",
+    color: "#1A1A1A",
+  },
+  modalBody: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+  },
+  modalLabel: {
+    fontSize: 14,
+    fontWeight: "600",
+    color: "#1A1A1A",
+    marginBottom: 10,
+  },
+  reasonInput: {
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: "#1A1A1A",
+    backgroundColor: "#F9F9F9",
+  },
+  modalFooter: {
+    flexDirection: "row",
+    gap: 10,
+    paddingHorizontal: 20,
+    paddingTop: 16,
+  },
+  modalButtonCancel: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#F0F0F0",
+    alignItems: "center",
+  },
+  modalButtonTextCancel: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#666",
+  },
+  modalButtonSubmit: {
+    flex: 1,
+    paddingVertical: 12,
+    borderRadius: 10,
+    backgroundColor: "#0f8fd5",
+    alignItems: "center",
+  },
+  modalButtonTextSubmit: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#FFFFFF",
+  },
+})
 
-export default OrderDetailsScreen;
+export default OrderDetailsScreen

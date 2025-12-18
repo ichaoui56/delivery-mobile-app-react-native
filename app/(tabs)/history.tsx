@@ -1,191 +1,309 @@
+"use client"
 
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from 'react-native';
+import { useState } from "react"
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from "react-native"
+import { MaterialCommunityIcons } from "@expo/vector-icons"
+import { LinearGradient } from "expo-linear-gradient"
 
-type OrderStatus = 'Delivered' | 'Cancelled';
+type OrderStatus = "Delivered" | "Cancelled"
 
 const dummyHistory = [
   {
-    id: '1',
-    orderId: 'ORD003',
-    customerName: 'Bob Johnson',
-    deliveryAddress: '789 Pine Ln, Anytown, USA',
-    status: 'Delivered' as OrderStatus,
-    date: '2023-10-26',
+    id: "1",
+    orderId: "ORD003",
+    customerName: "Bob Johnson",
+    deliveryAddress: "789 Pine Ln, Anytown, USA",
+    status: "Delivered" as OrderStatus,
+    date: "2023-10-26",
+    amount: "$45.99",
   },
   {
-    id: '2',
-    orderId: 'ORD004',
-    customerName: 'Alice Williams',
-    deliveryAddress: '101 Maple Dr, Anytown, USA',
-    status: 'Cancelled' as OrderStatus,
-    date: '2023-10-25',
+    id: "2",
+    orderId: "ORD004",
+    customerName: "Alice Williams",
+    deliveryAddress: "101 Maple Dr, Anytown, USA",
+    status: "Cancelled" as OrderStatus,
+    date: "2023-10-25",
+    amount: "$32.50",
   },
-];
+  {
+    id: "3",
+    orderId: "ORD002",
+    customerName: "John Smith",
+    deliveryAddress: "456 Oak Ave, Anytown, USA",
+    status: "Delivered" as OrderStatus,
+    date: "2023-10-24",
+    amount: "$78.20",
+  },
+  {
+    id: "4",
+    orderId: "ORD001",
+    customerName: "Sarah Brown",
+    deliveryAddress: "123 Elm St, Anytown, USA",
+    status: "Delivered" as OrderStatus,
+    date: "2023-10-23",
+    amount: "$56.75",
+  },
+]
 
 const HistoryScreen = () => {
-  const [filter, setFilter] = useState<OrderStatus>('Delivered');
+  const [filter, setFilter] = useState<OrderStatus>("Delivered")
 
-  const filteredHistory = dummyHistory.filter((order) => order.status === filter);
-
-  const renderHistoryItem = ({ item }: { item: typeof dummyHistory[0] }) => (
-    <View style={styles.orderCard}>
-      <View style={styles.cardHeader}>
-        <Text style={styles.orderId}>{item.orderId}</Text>
-        <Text style={[styles.status, getStatusStyle(item.status)]}>{item.status}</Text>
-      </View>
-      <View style={styles.cardBody}>
-        <Text style={styles.customerName}>{item.customerName}</Text>
-        <Text style={styles.address}>{item.deliveryAddress}</Text>
-      </View>
-      <View style={styles.cardFooter}>
-        <Text style={styles.date}>{item.date}</Text>
-      </View>
-    </View>
-  );
+  const filteredHistory = dummyHistory.filter((order) => order.status === filter)
 
   const getStatusStyle = (status: OrderStatus) => {
     switch (status) {
-      case 'Delivered':
-        return { backgroundColor: '#28a745', color: '#fff' };
-      case 'Cancelled':
-        return { backgroundColor: '#dc3545', color: '#fff' };
+      case "Delivered":
+        return { backgroundColor: "#D4EDDA", color: "#155724" }
+      case "Cancelled":
+        return { backgroundColor: "#F8D7DA", color: "#721C24" }
       default:
-        return {};
+        return { backgroundColor: "#E3F2FD", color: "#0f8fd5" }
     }
-  };
+  }
+
+  const getStatusIcon = (status: OrderStatus) => {
+    switch (status) {
+      case "Delivered":
+        return "check-circle"
+      case "Cancelled":
+        return "cancel"
+      default:
+        return "clock"
+    }
+  }
+
+  const renderHistoryItem = ({ item }: { item: (typeof dummyHistory)[0] }) => (
+    <TouchableOpacity style={styles.orderCard} activeOpacity={0.7}>
+      <View style={styles.cardLeft}>
+        <View style={[styles.statusIcon, getStatusStyle(item.status)]}>
+          <MaterialCommunityIcons
+            name={getStatusIcon(item.status)}
+            size={20}
+            color={getStatusStyle(item.status).color}
+          />
+        </View>
+      </View>
+      <View style={styles.cardCenter}>
+        <Text style={styles.orderId}>{item.orderId}</Text>
+        <Text style={styles.customerName}>{item.customerName}</Text>
+        <Text style={styles.address} numberOfLines={1}>
+          {item.deliveryAddress}
+        </Text>
+      </View>
+      <View style={styles.cardRight}>
+        <Text style={styles.amount}>{item.amount}</Text>
+        <Text style={styles.date}>{item.date}</Text>
+      </View>
+    </TouchableOpacity>
+  )
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Order history</Text>
+        <Text style={styles.headerTitle}>Order History</Text>
+        <Text style={styles.headerSubtitle}>Track your past deliveries</Text>
       </View>
 
+      {/* Stats Section */}
+      <View style={styles.statsContainer}>
+        <LinearGradient colors={["#0f8fd5", "#0a6ba8"]} style={styles.statCard}>
+          <MaterialCommunityIcons name="check-circle" size={32} color="#FFFFFF" />
+          <Text style={styles.statValue}>24</Text>
+          <Text style={styles.statLabel}>Delivered</Text>
+        </LinearGradient>
+        <LinearGradient colors={["#FF6B6B", "#E53E3E"]} style={styles.statCard}>
+          <MaterialCommunityIcons name="cancel" size={32} color="#FFFFFF" />
+          <Text style={styles.statValue}>2</Text>
+          <Text style={styles.statLabel}>Cancelled</Text>
+        </LinearGradient>
+      </View>
+
+      {/* Filter Tabs */}
       <View style={styles.filterContainer}>
         <TouchableOpacity
-          style={[styles.filterChip, filter === 'Delivered' && styles.activeFilterChip]}
-          onPress={() => setFilter('Delivered')}
+          style={[styles.filterChip, filter === "Delivered" && styles.activeFilterChip]}
+          onPress={() => setFilter("Delivered")}
         >
-          <Text style={[styles.filterChipText, filter === 'Delivered' && styles.activeFilterChipText]}>Delivered</Text>
+          <MaterialCommunityIcons name="check" size={16} color={filter === "Delivered" ? "#FFFFFF" : "#0f8fd5"} />
+          <Text style={[styles.filterChipText, filter === "Delivered" && styles.activeFilterChipText]}>Delivered</Text>
         </TouchableOpacity>
         <TouchableOpacity
-          style={[styles.filterChip, filter === 'Cancelled' && styles.activeFilterChip]}
-          onPress={() => setFilter('Cancelled')}
+          style={[styles.filterChip, filter === "Cancelled" && styles.activeFilterChip]}
+          onPress={() => setFilter("Cancelled")}
         >
-          <Text style={[styles.filterChipText, filter === 'Cancelled' && styles.activeFilterChipText]}>Cancelled</Text>
+          <MaterialCommunityIcons name="close" size={16} color={filter === "Cancelled" ? "#FFFFFF" : "#FF6B6B"} />
+          <Text style={[styles.filterChipText, filter === "Cancelled" && styles.activeFilterChipText]}>Cancelled</Text>
         </TouchableOpacity>
       </View>
 
+      {/* History List */}
       <FlatList
         data={filteredHistory}
         renderItem={renderHistoryItem}
         keyExtractor={(item) => item.id}
         contentContainerStyle={styles.listContainer}
-        ListEmptyComponent={<Text style={styles.emptyText}>No orders found</Text>}
+        showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <MaterialCommunityIcons name="inbox" size={60} color="#D0D0D0" />
+            <Text style={styles.emptyText}>No orders found</Text>
+          </View>
+        }
       />
     </SafeAreaView>
-  );
-};
+  )
+}
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f0f4f8',
+    backgroundColor: "#FFFFFF",
   },
   header: {
-    backgroundColor: '#fff',
-    padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#ddd',
-    alignItems: 'center',
+    paddingHorizontal: 20,
+    paddingTop: 15,
+    paddingBottom: 10,
   },
   headerTitle: {
+    fontSize: 28,
+    fontWeight: "bold",
+    color: "#1A1A1A",
+    marginBottom: 5,
+  },
+  headerSubtitle: {
+    fontSize: 14,
+    color: "#808080",
+  },
+  statsContainer: {
+    flexDirection: "row",
+    paddingHorizontal: 20,
+    gap: 12,
+    marginBottom: 20,
+  },
+  statCard: {
+    flex: 1,
+    paddingVertical: 16,
+    paddingHorizontal: 12,
+    borderRadius: 16,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+  statValue: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#0586b5',
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    marginVertical: 6,
+  },
+  statLabel: {
+    fontSize: 12,
+    color: "#FFFFFF",
+    fontWeight: "600",
   },
   filterContainer: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-    paddingVertical: 10,
-    backgroundColor: '#fff',
+    flexDirection: "row",
+    justifyContent: "center",
+    gap: 10,
+    paddingHorizontal: 20,
+    marginBottom: 15,
   },
   filterChip: {
+    flexDirection: "row",
     paddingVertical: 8,
     paddingHorizontal: 16,
     borderRadius: 20,
-    backgroundColor: '#e0e0e0',
+    backgroundColor: "#F0F0F0",
+    alignItems: "center",
+    gap: 6,
+    borderWidth: 1.5,
+    borderColor: "transparent",
   },
   activeFilterChip: {
-    backgroundColor: '#0586b5',
+    backgroundColor: "#0f8fd5",
+    borderColor: "#0f8fd5",
   },
   filterChipText: {
     fontSize: 14,
-    color: '#333',
+    color: "#333",
+    fontWeight: "600",
   },
   activeFilterChipText: {
-    color: '#fff',
+    color: "#FFFFFF",
   },
   listContainer: {
-    padding: 10,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
   },
   orderCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 15,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 5,
-    elevation: 3,
+    flexDirection: "row",
+    backgroundColor: "#F9F9F9",
+    borderRadius: 16,
+    padding: 14,
+    marginBottom: 12,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: 10,
+  cardLeft: {
+    marginRight: 12,
+  },
+  statusIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  cardCenter: {
+    flex: 1,
   },
   orderId: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#333',
-  },
-  status: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 10,
-    overflow: 'hidden',
-  },
-  cardBody: {
-    marginBottom: 10,
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#1A1A1A",
+    marginBottom: 4,
   },
   customerName: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 5,
+    fontSize: 13,
+    fontWeight: "600",
+    color: "#333",
+    marginBottom: 3,
   },
   address: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 12,
+    color: "#808080",
   },
-  cardFooter: {
-    borderTopWidth: 1,
-    borderTopColor: '#eee',
-    paddingTop: 10,
-    alignItems: 'flex-end',
+  cardRight: {
+    alignItems: "flex-end",
+  },
+  amount: {
+    fontSize: 14,
+    fontWeight: "bold",
+    color: "#0f8fd5",
+    marginBottom: 4,
   },
   date: {
-    fontSize: 14,
-    color: '#666',
+    fontSize: 11,
+    color: "#A0A0A0",
+  },
+  emptyContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    marginTop: 80,
   },
   emptyText: {
-    textAlign: 'center',
-    marginTop: 50,
     fontSize: 16,
-    color: '#666',
+    color: "#A0A0A0",
+    marginTop: 12,
+    fontWeight: "500",
   },
-});
+})
 
-export default HistoryScreen;
+export default HistoryScreen
