@@ -1,5 +1,6 @@
 "use client"
 
+import { useAuth } from "@/lib/auth-provider"
 import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
@@ -10,8 +11,10 @@ const SettingsScreen = () => {
   const router = useRouter()
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [locationEnabled, setLocationEnabled] = useState(true)
+  const { user, signOut } = useAuth()
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut()
     router.replace("/(auth)/signin")
   }
 
@@ -49,8 +52,14 @@ const SettingsScreen = () => {
         <LinearGradient colors={["#0f8fd5", "#0a6ba8"]} style={styles.profileCard}>
           <Image source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }} style={styles.profilePicture} />
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>John Doe</Text>
-            <Text style={styles.profileEmail}>john.doe@example.com</Text>
+            <Text style={styles.profileName}>{user?.name || ""}</Text>
+            <Text style={styles.profileEmail}>{user?.email || ""}</Text>
+            {user?.deliveryMan ? (
+              <Text style={styles.profileMeta}>
+                {user.deliveryMan.city || ""}
+                {user.deliveryMan.vehicleType ? ` • ${user.deliveryMan.vehicleType}` : ""}
+              </Text>
+            ) : null}
           </View>
           <TouchableOpacity style={styles.editButton}>
             <MaterialCommunityIcons name="pencil" size={16} color="#0f8fd5" />
@@ -194,6 +203,11 @@ const styles = StyleSheet.create({
   profileEmail: {
     fontSize: 12,
     color: "#E3F2FD",
+  },
+  profileMeta: {
+    fontSize: 12,
+    color: "#E3F2FD",
+    marginTop: 4,
   },
   editButton: {
     width: 36,

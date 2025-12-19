@@ -1,21 +1,22 @@
+import { useAuth } from '@/lib/auth-provider';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useRouter } from 'expo-router';
 import React, { useState } from 'react';
 import {
-    View,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    StyleSheet,
-    KeyboardAvoidingView,
-    Platform,
     Dimensions,
     Image,
     Keyboard,
-    TouchableWithoutFeedback,
+    KeyboardAvoidingView,
+    Platform,
     ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    TouchableWithoutFeedback,
+    View,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Path } from 'react-native-svg';
-import { useRouter } from 'expo-router';
 
 const { width, height } = Dimensions.get('window');
 
@@ -115,19 +116,33 @@ export default function SignInScreen() {
     const [password, setPassword] = useState('');
     const [focusedField, setFocusedField] = useState<string | null>(null);
     const [showPassword, setShowPassword] = useState(false);
+    const [submitting, setSubmitting] = useState(false);
+    const [errorMessage, setErrorMessage] = useState<string | null>(null);
     const emailInputRef = React.useRef<TextInput>(null);
     const passwordInputRef = React.useRef<TextInput>(null);
 
     const router = useRouter();
+    const { signIn } = useAuth();
 
-    const handleSignIn = () => {
-        // Implement sign-in logic here
-        console.log('Signing in with:', { email, password });
-        router.replace('/(tabs)');
-    };
-    const handleLogin = () => {
+    const handleSignIn = async () => {
         Keyboard.dismiss();
-        console.log('Login:', { email, password });
+        setErrorMessage(null);
+
+        if (!email.trim() || !password) {
+            setErrorMessage('Please enter email and password');
+            return;
+        }
+
+        try {
+            setSubmitting(true);
+            await signIn(email.trim(), password);
+            router.replace('/(tabs)');
+        } catch (e) {
+            const message = e instanceof Error ? e.message : 'Login failed';
+            setErrorMessage(message);
+        } finally {
+            setSubmitting(false);
+        }
     };
 
     const dismissKeyboard = () => {
@@ -257,7 +272,7 @@ export default function SignInScreen() {
                                                 autoCapitalize="none"
                                                 autoComplete="password"
                                                 returnKeyType="done"
-                                                onSubmitEditing={handleLogin}
+                                                onSubmitEditing={handleSignIn}
                                             />
                                             <TouchableOpacity
                                                 onPress={() => setShowPassword(!showPassword)}
@@ -278,6 +293,7 @@ export default function SignInScreen() {
                                 <TouchableOpacity
                                     style={styles.loginButton}
                                     onPress={handleSignIn}
+                                    disabled={submitting}
                                     activeOpacity={0.8}>
                                     <LinearGradient
                                         colors={['#0f8fd5', '#0a6ba8']}
@@ -287,9 +303,13 @@ export default function SignInScreen() {
                                         <View style={styles.loginButtonIcon}>
                                             <RocketIcon size={20} color="#ffffff" />
                                         </View>
-                                        <Text style={styles.loginButtonText}>Start Tracking</Text>
+                                        <Text style={styles.loginButtonText}>{submitting ? 'Signing in...' : 'Start Tracking'}</Text>
                                     </LinearGradient>
                                 </TouchableOpacity>
+
+                                {errorMessage ? (
+                                    <Text style={styles.errorText}>{errorMessage}</Text>
+                                ) : null}
 
                                 {/* Features Preview */}
                                 <View style={styles.featuresContainer}>
@@ -552,6 +572,13 @@ const styles = StyleSheet.create({
         fontSize: 17,
         fontWeight: '700',
         letterSpacing: 0.5,
+    },
+    errorText: {
+        marginTop: 12,
+        color: '#ef4444',
+        fontSize: 13,
+        fontWeight: '600',
+        textAlign: 'center',
     },
     featuresContainer: {
         flexDirection: 'row',
