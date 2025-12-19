@@ -129,7 +129,7 @@ export default function SignInScreen() {
         setErrorMessage(null);
 
         if (!email.trim() || !password) {
-            setErrorMessage('Please enter email and password');
+            setErrorMessage('Veuillez saisir votre e-mail et votre mot de passe');
             return;
         }
 
@@ -138,7 +138,7 @@ export default function SignInScreen() {
             await signIn(email.trim(), password);
             router.replace('/(tabs)');
         } catch (e) {
-            const message = e instanceof Error ? e.message : 'Login failed';
+            const message = e instanceof Error ? e.message : 'Échec de la connexion';
             setErrorMessage(message);
         } finally {
             setSubmitting(false);
@@ -202,8 +202,8 @@ export default function SignInScreen() {
                                 <Image source={require('../../assets/images/icon.png')} style={styles.logo} />
                             </View>
                             <Text style={styles.brandText}>Sonic Delivery</Text>
-                            <Text style={styles.welcomeText}>Delivery man app</Text>
-                            <Text style={styles.subtitleText}>Track. Deliver. Get paid</Text>
+                            <Text style={styles.welcomeText}>Application livreur</Text>
+                            <Text style={styles.subtitleText}>Suivez. Livrez. Soyez payé</Text>
                         </View>
 
                         {/* Login Card */}
@@ -211,13 +211,13 @@ export default function SignInScreen() {
                             <View style={styles.cardContent}>
                                 {/* Header */}
                                 <View style={styles.cardHeader}>
-                                    <Text style={styles.cardTitle}>Welcome Back</Text>
-                                    <Text style={styles.cardSubtitle}>Sign in to track your devices</Text>
+                                    <Text style={styles.cardTitle}>Bon retour</Text>
+                                    <Text style={styles.cardSubtitle}>Connectez-vous pour accéder à votre espace</Text>
                                 </View>
 
                                 {/* Email Input */}
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Email Address</Text>
+                                    <Text style={styles.label}>Adresse e-mail</Text>
                                     <TouchableWithoutFeedback onPress={() => emailInputRef.current?.focus()}>
                                         <View
                                             style={[
@@ -230,7 +230,7 @@ export default function SignInScreen() {
                                             <TextInput
                                                 ref={emailInputRef}
                                                 style={styles.input}
-                                                placeholder="your.email@example.com"
+                                                placeholder="votre.email@exemple.com"
                                                 placeholderTextColor="#94a3b8"
                                                 value={email}
                                                 onChangeText={setEmail}
@@ -249,7 +249,7 @@ export default function SignInScreen() {
 
                                 {/* Password Input */}
                                 <View style={styles.inputGroup}>
-                                    <Text style={styles.label}>Password</Text>
+                                    <Text style={styles.label}>Mot de passe</Text>
                                     <TouchableWithoutFeedback onPress={() => passwordInputRef.current?.focus()}>
                                         <View
                                             style={[
@@ -262,7 +262,7 @@ export default function SignInScreen() {
                                             <TextInput
                                                 ref={passwordInputRef}
                                                 style={styles.input}
-                                                placeholder="Enter your password"
+                                                placeholder="Saisissez votre mot de passe"
                                                 placeholderTextColor="#94a3b8"
                                                 value={password}
                                                 onChangeText={setPassword}
@@ -303,7 +303,7 @@ export default function SignInScreen() {
                                         <View style={styles.loginButtonIcon}>
                                             <RocketIcon size={20} color="#ffffff" />
                                         </View>
-                                        <Text style={styles.loginButtonText}>{submitting ? 'Signing in...' : 'Start Tracking'}</Text>
+                                        <Text style={styles.loginButtonText}>{submitting ? 'Connexion...' : 'Se connecter'}</Text>
                                     </LinearGradient>
                                 </TouchableOpacity>
 
@@ -315,15 +315,15 @@ export default function SignInScreen() {
                                 <View style={styles.featuresContainer}>
                                     <View style={styles.featureItem}>
                                         <GlobeIcon size={24} color="#0f8fd5" />
-                                        <Text style={styles.featureText}>Real-time Location</Text>
+                                        <Text style={styles.featureText}>Localisation en temps réel</Text>
                                     </View>
                                     <View style={styles.featureItem}>
                                         <ChartIcon size={24} color="#0f8fd5" />
-                                        <Text style={styles.featureText}>Route History</Text>
+                                        <Text style={styles.featureText}>Historique des trajets</Text>
                                     </View>
                                     <View style={styles.featureItem}>
                                         <BellIcon size={24} color="#0f8fd5" />
-                                        <Text style={styles.featureText}>Instant Alerts</Text>
+                                        <Text style={styles.featureText}>Alertes instantanées</Text>
                                     </View>
                                 </View>
                             </View>
@@ -332,7 +332,7 @@ export default function SignInScreen() {
                         {/* Bottom Info */}
                         <View style={styles.bottomInfo}>
                             <Text style={styles.bottomInfoText}>
-                                Secure tracking with end-to-end encryption 🔒
+                                Suivi sécurisé avec chiffrement de bout en bout 🔒
                             </Text>
                         </View>
                     </View>

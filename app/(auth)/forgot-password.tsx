@@ -1,7 +1,7 @@
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from 'react-native';
 import { Link, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const ForgotPasswordScreen = () => {
   const [email, setEmail] = useState('');
@@ -9,23 +9,23 @@ const ForgotPasswordScreen = () => {
 
   const handleResetPassword = () => {
     if (!email) {
-      Alert.alert('Error', 'Please enter your email');
+      Alert.alert('Erreur', 'Veuillez saisir votre e-mail');
       return;
     }
     // Implement password reset logic here
     console.log('Sending password reset link to:', email);
-    Alert.alert('Link Sent', 'A password reset link has been sent to your email address.');
+    Alert.alert('Lien envoyé', 'Un lien de réinitialisation du mot de passe a été envoyé à votre adresse e-mail.');
     router.push('/signin');
   };
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Forgot Password</Text>
-      <Text style={styles.subtitle}>Enter your email to receive a reset link</Text>
+      <Text style={styles.title}>Mot de passe oublié</Text>
+      <Text style={styles.subtitle}>Saisissez votre e-mail pour recevoir un lien de réinitialisation</Text>
 
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder="E-mail"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -34,14 +34,14 @@ const ForgotPasswordScreen = () => {
       />
 
       <TouchableOpacity style={styles.button} onPress={handleResetPassword}>
-        <Text style={styles.buttonText}>Send Reset Link</Text>
+        <Text style={styles.buttonText}>Envoyer le lien</Text>
       </TouchableOpacity>
 
       <View style={styles.signInContainer}>
-        <Text style={styles.signInText}>Remembered your password? </Text>
+        <Text style={styles.signInText}>Vous vous souvenez de votre mot de passe ? </Text>
         <Link href="/signin" asChild>
           <TouchableOpacity>
-            <Text style={styles.signInLink}>Sign In</Text>
+            <Text style={styles.signInLink}>Se connecter</Text>
           </TouchableOpacity>
         </Link>
       </View>

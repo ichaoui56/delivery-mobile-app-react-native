@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView } from "react-native"
 import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
+import { useState } from "react"
+import { FlatList, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 
 type OrderStatus = "Delivered" | "Cancelled"
 
@@ -101,8 +101,8 @@ const HistoryScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Order History</Text>
-        <Text style={styles.headerSubtitle}>Track your past deliveries</Text>
+        <Text style={styles.headerTitle}>Historique des commandes</Text>
+        <Text style={styles.headerSubtitle}>Suivez vos livraisons passées</Text>
       </View>
 
       {/* Stats Section */}
@@ -110,12 +110,12 @@ const HistoryScreen = () => {
         <LinearGradient colors={["#0f8fd5", "#0a6ba8"]} style={styles.statCard}>
           <MaterialCommunityIcons name="check-circle" size={32} color="#FFFFFF" />
           <Text style={styles.statValue}>24</Text>
-          <Text style={styles.statLabel}>Delivered</Text>
+          <Text style={styles.statLabel}>Livrées</Text>
         </LinearGradient>
         <LinearGradient colors={["#FF6B6B", "#E53E3E"]} style={styles.statCard}>
           <MaterialCommunityIcons name="cancel" size={32} color="#FFFFFF" />
           <Text style={styles.statValue}>2</Text>
-          <Text style={styles.statLabel}>Cancelled</Text>
+          <Text style={styles.statLabel}>Annulées</Text>
         </LinearGradient>
       </View>
 
@@ -126,14 +126,14 @@ const HistoryScreen = () => {
           onPress={() => setFilter("Delivered")}
         >
           <MaterialCommunityIcons name="check" size={16} color={filter === "Delivered" ? "#FFFFFF" : "#0f8fd5"} />
-          <Text style={[styles.filterChipText, filter === "Delivered" && styles.activeFilterChipText]}>Delivered</Text>
+          <Text style={[styles.filterChipText, filter === "Delivered" && styles.activeFilterChipText]}>Livrées</Text>
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.filterChip, filter === "Cancelled" && styles.activeFilterChip]}
           onPress={() => setFilter("Cancelled")}
         >
           <MaterialCommunityIcons name="close" size={16} color={filter === "Cancelled" ? "#FFFFFF" : "#FF6B6B"} />
-          <Text style={[styles.filterChipText, filter === "Cancelled" && styles.activeFilterChipText]}>Cancelled</Text>
+          <Text style={[styles.filterChipText, filter === "Cancelled" && styles.activeFilterChipText]}>Annulées</Text>
         </TouchableOpacity>
       </View>
 
@@ -147,7 +147,7 @@ const HistoryScreen = () => {
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
             <MaterialCommunityIcons name="inbox" size={60} color="#D0D0D0" />
-            <Text style={styles.emptyText}>No orders found</Text>
+            <Text style={styles.emptyText}>Aucune commande trouvée</Text>
           </View>
         }
       />

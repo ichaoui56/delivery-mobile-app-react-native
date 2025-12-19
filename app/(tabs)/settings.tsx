@@ -2,16 +2,21 @@
 
 import { useAuth } from "@/lib/auth-provider"
 import { MaterialCommunityIcons } from "@expo/vector-icons"
+import { Image } from "expo-image"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
 import { useState } from "react"
-import { Image, SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native"
+import { SafeAreaView, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from "react-native"
 
 const SettingsScreen = () => {
   const router = useRouter()
   const [notificationsEnabled, setNotificationsEnabled] = useState(true)
   const [locationEnabled, setLocationEnabled] = useState(true)
-  const { user, signOut } = useAuth()
+  const { user, signOut, status } = useAuth()
+  const [avatarLoading, setAvatarLoading] = useState(false)
+  const [avatarLoadedUri, setAvatarLoadedUri] = useState<string | null>(null)
+
+  const profileLoading = status === "loading" || avatarLoading
 
   const handleLogout = async () => {
     await signOut()
@@ -32,34 +37,59 @@ const SettingsScreen = () => {
     {
       title: "Notifications",
       icon: "bell",
-      items: [{ label: "Push Notifications", state: notificationsEnabled, setState: setNotificationsEnabled }],
+      items: [{ label: "Notifications push", state: notificationsEnabled, setState: setNotificationsEnabled }],
     },
     {
-      title: "Privacy & Security",
+      title: "Confidentialité et sécurité",
       icon: "lock",
-      items: [{ label: "Location Services", state: locationEnabled, setState: setLocationEnabled }],
+      items: [{ label: "Services de localisation", state: locationEnabled, setState: setLocationEnabled }],
     },
   ]
 
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Settings</Text>
+        <Text style={styles.headerTitle}>Paramètres</Text>
       </View>
 
       <ScrollView showsVerticalScrollIndicator={false} style={styles.content}>
         {/* Profile Card */}
         <LinearGradient colors={["#0f8fd5", "#0a6ba8"]} style={styles.profileCard}>
-          <Image source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }} style={styles.profilePicture} />
+          <View style={styles.profileAvatarWrapper}>
+            {profileLoading ? <View style={styles.profileAvatarSkeleton} /> : null}
+            <Image
+              source={user?.image ? user.image : require("../../assets/images/profil-icon.png")}
+              style={styles.profilePicture}
+              cachePolicy="disk"
+              onLoadStart={() => {
+                const uri = user?.image || null
+                if (uri && uri === avatarLoadedUri) return
+                setAvatarLoading(true)
+              }}
+              onLoadEnd={() => {
+                setAvatarLoading(false)
+                if (user?.image) setAvatarLoadedUri(user.image)
+              }}
+            />
+          </View>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{user?.name || ""}</Text>
-            <Text style={styles.profileEmail}>{user?.email || ""}</Text>
-            {user?.deliveryMan ? (
-              <Text style={styles.profileMeta}>
-                {user.deliveryMan.city || ""}
-                {user.deliveryMan.vehicleType ? ` • ${user.deliveryMan.vehicleType}` : ""}
-              </Text>
-            ) : null}
+            {profileLoading ? (
+              <>
+                <View style={styles.profileTextSkeletonLg} />
+                <View style={styles.profileTextSkeletonSm} />
+              </>
+            ) : (
+              <>
+                <Text style={styles.profileName}>{user?.name || ""}</Text>
+                <Text style={styles.profileEmail}>{user?.email || ""}</Text>
+                {user?.deliveryMan ? (
+                  <Text style={styles.profileMeta}>
+                    {user.deliveryMan.city || ""}
+                    {user.deliveryMan.vehicleType ? ` • ${user.deliveryMan.vehicleType}` : ""}
+                  </Text>
+                ) : null}
+              </>
+            )}
           </View>
           <TouchableOpacity style={styles.editButton}>
             <MaterialCommunityIcons name="pencil" size={16} color="#0f8fd5" />
@@ -91,23 +121,23 @@ const SettingsScreen = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="cog" size={20} color="#0f8fd5" />
-            <Text style={styles.sectionTitle}>App Settings</Text>
+            <Text style={styles.sectionTitle}>Paramètres de l’application</Text>
           </View>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <Text style={styles.menuItemText}>Edit Profile</Text>
+              <Text style={styles.menuItemText}>Modifier le profil</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={20} color="#A0A0A0" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <Text style={styles.menuItemText}>Change Password</Text>
+              <Text style={styles.menuItemText}>Changer le mot de passe</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={20} color="#A0A0A0" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <Text style={styles.menuItemText}>About App</Text>
+              <Text style={styles.menuItemText}>À propos de l’application</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={20} color="#A0A0A0" />
           </TouchableOpacity>
@@ -117,23 +147,23 @@ const SettingsScreen = () => {
         <View style={styles.section}>
           <View style={styles.sectionHeader}>
             <MaterialCommunityIcons name="help-circle" size={20} color="#0f8fd5" />
-            <Text style={styles.sectionTitle}>Support</Text>
+            <Text style={styles.sectionTitle}>Assistance</Text>
           </View>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <Text style={styles.menuItemText}>Help & Support</Text>
+              <Text style={styles.menuItemText}>Aide et assistance</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={20} color="#A0A0A0" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <Text style={styles.menuItemText}>Terms of Service</Text>
+              <Text style={styles.menuItemText}>Conditions d’utilisation</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={20} color="#A0A0A0" />
           </TouchableOpacity>
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuItemLeft}>
-              <Text style={styles.menuItemText}>Privacy Policy</Text>
+              <Text style={styles.menuItemText}>Politique de confidentialité</Text>
             </View>
             <MaterialCommunityIcons name="chevron-right" size={20} color="#A0A0A0" />
           </TouchableOpacity>
@@ -142,7 +172,7 @@ const SettingsScreen = () => {
         {/* Logout Button */}
         <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
           <MaterialCommunityIcons name="logout" size={18} color="#FFFFFF" />
-          <Text style={styles.logoutButtonText}>Logout</Text>
+          <Text style={styles.logoutButtonText}>Déconnexion</Text>
         </TouchableOpacity>
 
         <View style={styles.spacer} />
@@ -184,15 +214,38 @@ const styles = StyleSheet.create({
     elevation: 3,
   },
   profilePicture: {
-    width: 60,
-    height: 60,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    marginRight: 5,
+  },
+  profileAvatarWrapper: {
+    position: "relative",
+  },
+  profileAvatarSkeleton: {
+    position: "absolute",
+    left: 0,
+    top: 0,
+    right: 0,
+    bottom: 0,
     borderRadius: 30,
-    marginRight: 12,
-    borderWidth: 2,
-    borderColor: "#FFFFFF",
+    backgroundColor: "rgba(255, 255, 255, 0.65)",
   },
   profileInfo: {
     flex: 1,
+  },
+  profileTextSkeletonLg: {
+    width: 140,
+    height: 14,
+    borderRadius: 7,
+    backgroundColor: "rgba(255, 255, 255, 0.55)",
+    marginBottom: 8,
+  },
+  profileTextSkeletonSm: {
+    width: 110,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: "rgba(255, 255, 255, 0.45)",
   },
   profileName: {
     fontSize: 16,

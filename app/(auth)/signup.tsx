@@ -1,8 +1,8 @@
 
-import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, Alert } from 'react-native';
-import { Link, useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
+import { Link, useRouter } from 'expo-router';
+import React, { useState } from 'react';
+import { Alert, Image, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
 
 const SignUpScreen = () => {
   const [name, setName] = useState('');
@@ -15,7 +15,7 @@ const SignUpScreen = () => {
   const handleSignUp = () => {
     // Basic validation
     if (!name || !email || !phone || !password) {
-      Alert.alert('Error', 'Please fill all fields');
+      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
     // Implement sign-up logic here
@@ -26,7 +26,7 @@ const SignUpScreen = () => {
   const handlePickImage = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== 'granted') {
-      Alert.alert('Permission required', 'Sorry, we need camera roll permissions to make this work!');
+      Alert.alert('Permission requise', "Nous avons besoin de l'accès à vos photos pour continuer.");
       return;
     }
 
@@ -44,27 +44,27 @@ const SignUpScreen = () => {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Create Account</Text>
-      <Text style={styles.subtitle}>Join us to start your journey</Text>
+      <Text style={styles.title}>Créer un compte</Text>
+      <Text style={styles.subtitle}>Rejoignez-nous pour commencer</Text>
 
       <TouchableOpacity style={styles.profilePictureContainer} onPress={handlePickImage}>
         {profilePicture ? (
           <Image source={{ uri: profilePicture }} style={styles.profilePicture} />
         ) : (
-          <Text style={styles.profilePictureText}>Add Photo</Text>
+          <Text style={styles.profilePictureText}>Ajouter une photo</Text>
         )}
       </TouchableOpacity>
 
       <TextInput
         style={styles.input}
-        placeholder="Name"
+        placeholder="Nom"
         value={name}
         onChangeText={setName}
         placeholderTextColor="#999"
       />
       <TextInput
         style={styles.input}
-        placeholder="Email"
+        placeholder="E-mail"
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -73,7 +73,7 @@ const SignUpScreen = () => {
       />
       <TextInput
         style={styles.input}
-        placeholder="Phone"
+        placeholder="Téléphone"
         value={phone}
         onChangeText={setPhone}
         keyboardType="phone-pad"
@@ -81,7 +81,7 @@ const SignUpScreen = () => {
       />
       <TextInput
         style={styles.input}
-        placeholder="Password"
+        placeholder="Mot de passe"
         value={password}
         onChangeText={setPassword}
         secureTextEntry
@@ -89,14 +89,14 @@ const SignUpScreen = () => {
       />
 
       <TouchableOpacity style={styles.button} onPress={handleSignUp}>
-        <Text style={styles.buttonText}>Sign Up</Text>
+        <Text style={styles.buttonText}>S'inscrire</Text>
       </TouchableOpacity>
 
       <View style={styles.signInContainer}>
-        <Text style={styles.signInText}>Already have an account? </Text>
+        <Text style={styles.signInText}>Vous avez déjà un compte ? </Text>
         <Link href="/signin" asChild>
           <TouchableOpacity>
-            <Text style={styles.signInLink}>Sign In</Text>
+            <Text style={styles.signInLink}>Se connecter</Text>
           </TouchableOpacity>
         </Link>
       </View>

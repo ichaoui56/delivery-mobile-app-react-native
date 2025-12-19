@@ -1,10 +1,11 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, SafeAreaView, Image, TextInput } from "react-native"
-import { useRouter } from "expo-router"
+import { useAuth } from "@/lib/auth-provider"
 import { LinearGradient } from "expo-linear-gradient"
-import Svg, { Path, Polyline, Line } from "react-native-svg"
+import { useRouter } from "expo-router"
+import { useState } from "react"
+import { FlatList, Image, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
+import Svg, { Line, Path, Polyline } from "react-native-svg"
 
 // --- SVG Icons ---
 const BellIcon = ({ size = 24, color = "#000000" }) => (
@@ -43,21 +44,56 @@ const SearchIcon = ({ size = 20, color = "#A0A0A0" }) => (
 )
 
 // --- Interfaces ---
-type ShipmentStatus = "All" | "Pending" | "On Delivery" | "Delivered"
+type ShipmentStatus = "Tous" | "En attente" | "En cours" | "Livré"
 
 interface Shipment {
   id: string
   name: string
   trackingId: string
   status: ShipmentStatus
+  address: string
+  city: string
+  date: string
 }
 
 // --- Mock Data ---
 const mockShipments: Shipment[] = [
-  { id: "1", name: "Apple 2022 MacBook Pro...", trackingId: "V789456AR123", status: "On Delivery" },
-  { id: "2", name: "iPhone 14 Pro Max (Purple)", trackingId: "V789456AR124", status: "Pending" },
-  { id: "3", name: "Sony WH-1000XM5 Headphones", trackingId: "V789456AR125", status: "Delivered" },
-  { id: "4", name: "Samsung 49-Inch Curved Gaming Monitor", trackingId: "V789456AR126", status: "On Delivery" },
+  { 
+    id: "1", 
+    name: "MacBook Pro 2022", 
+    trackingId: "V789456AR123", 
+    status: "En cours",
+    address: "123 Rue de la Paix",
+    city: "Paris",
+    date: "Aujourd'hui, 10:30"
+  },
+  { 
+    id: "2", 
+    name: "iPhone 14 Pro Max (Violet)", 
+    trackingId: "V789456AR124", 
+    status: "En attente",
+    address: "456 Avenue des Champs-Élysées",
+    city: "Lyon",
+    date: "Demain, 09:15"
+  },
+  { 
+    id: "3", 
+    name: "Casque Sony WH-1000XM5", 
+    trackingId: "V789456AR125", 
+    status: "Livré",
+    address: "789 Boulevard Saint-Germain",
+    city: "Marseille",
+    date: "Hier, 14:45"
+  },
+  { 
+    id: "4", 
+    name: "Écran de jeu incurvé Samsung 49\"", 
+    trackingId: "V789456AR126", 
+    status: "En cours",
+    address: "101 Rue du Faubourg Saint-Honoré",
+    city: "Toulouse",
+    date: "Aujourd'hui, 11:20"
+  },
 ]
 
 // --- Light Theme Colors ---
@@ -74,16 +110,23 @@ const LIGHT_COLORS = {
 // --- Main Component ---
 export default function HomeScreen() {
   const router = useRouter()
+  const { user } = useAuth()
   const styles = createStyles()
 
-  const [activeFilter, setActiveFilter] = useState<ShipmentStatus>("All")
+  const [activeFilter, setActiveFilter] = useState<ShipmentStatus>("Tous")
   const [searchQuery, setSearchQuery] = useState("")
+  
+  // Get user's first name or default to "Utilisateur"
+  const firstName = user?.name?.split(' ')[0] || 'Utilisateur'
+  const userCity = user?.deliveryMan?.city || 'Ville inconnue'
+  const userEmail = user?.email || ''
 
   const filteredShipments = mockShipments.filter((shipment) => {
-    const matchesFilter = activeFilter === "All" || shipment.status === activeFilter
+    const matchesFilter = activeFilter === "Tous" || shipment.status === activeFilter
     const matchesSearch =
       shipment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shipment.trackingId.toLowerCase().includes(searchQuery.toLowerCase())
+      shipment.trackingId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      shipment.city.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesFilter && matchesSearch
   })
 
@@ -93,22 +136,64 @@ export default function HomeScreen() {
         <BoxIcon />
       </View>
       <View style={styles.shipmentDetails}>
-        <Text style={styles.shipmentName}>{item.name}</Text>
-        <Text style={styles.shipmentTrackingId}>ID: {item.trackingId}</Text>
+        <Text style={styles.shipmentName} numberOfLines={1}>{item.name}</Text>
+        <Text style={styles.shipmentTrackingId}>
+          <Text style={styles.boldText}>N°: </Text>
+          {item.trackingId}
+        </Text>
+        <Text style={styles.shipmentAddress} numberOfLines={1}>
+          {item.address}, {item.city}
+        </Text>
+        <Text style={styles.shipmentDate}>{item.date}</Text>
+      </View>
+      <View style={[
+        styles.statusBadge,
+        { backgroundColor: `${getStatusColor(item.status)}1A` },
+      ]}>
+        <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
+          {item.status}
+        </Text>
       </View>
       <Text style={styles.arrowIcon}>{`>`}</Text>
     </TouchableOpacity>
   )
+  
+  const getStatusColor = (status: ShipmentStatus): string => {
+    switch (status) {
+      case 'En cours':
+        return '#0f8fd5';
+      case 'En attente':
+        return '#FFA500';
+      case 'Livré':
+        return '#4CAF50';
+      default:
+        return '#808080';
+    }
+  }
 
   return (
     <SafeAreaView style={styles.container}>
       {/* --- Header -- */}
       <View style={styles.header}>
         <View style={styles.userInfo}>
-          <Image source={{ uri: "https://randomuser.me/api/portraits/men/32.jpg" }} style={styles.avatar} />
+          {user?.image ? (
+            <Image 
+              source={{ uri: user.image }} 
+              style={styles.avatar} 
+            />
+          ) : (
+            <View style={[styles.avatar, styles.avatarPlaceholder]}>
+              <Text style={styles.avatarText}>
+                {firstName.charAt(0).toUpperCase()}
+              </Text>
+            </View>
+          )}
           <View>
-            <Text style={styles.greeting}>Hello Daniel</Text>
-            <Text style={styles.location}>Colorado, USA</Text>
+            <Text style={styles.greeting}>Bonjour, {firstName}</Text>
+            <Text style={styles.location}>{userCity}</Text>
+            {userEmail ? (
+              <Text style={styles.email} numberOfLines={1}>{userEmail}</Text>
+            ) : null}
           </View>
         </View>
         <TouchableOpacity>
@@ -120,25 +205,42 @@ export default function HomeScreen() {
         ListHeaderComponent={
           <View style={styles.listHeaderContainer}>
             {/* --- Current Shipping Card -- */}
-            <Text style={styles.sectionTitle}>Current Shipping</Text>
-            <LinearGradient colors={["#0f8fd5", "#0a6ba8"]} style={styles.premiumCard}>
-              <View style={styles.cardContent}>
-                <View>
-                  <Text style={styles.premiumTitle}>Premium Box Packing</Text>
-                  <Text style={styles.premiumId}>ID: V789456AR123</Text>
+            <Text style={styles.sectionTitle}>Livraison en cours</Text>
+            {filteredShipments.filter(s => s.status === 'En cours').length > 0 ? (
+              <LinearGradient colors={["#0f8fd5", "#0a6ba8"]} style={styles.premiumCard}>
+                <View style={styles.cardContent}>
+                  <View>
+                    <Text style={styles.premiumTitle}>
+                      {filteredShipments.find(s => s.status === 'En cours')?.name || 'Colis en cours'}
+                    </Text>
+                    <Text style={styles.premiumId}>
+                      N°: {filteredShipments.find(s => s.status === 'En cours')?.trackingId || 'N/A'}
+                    </Text>
+                  </View>
+                  <TouchableOpacity 
+                    style={styles.arrowButton}
+                    onPress={() => router.push(`/order-details/${filteredShipments.find(s => s.status === 'En cours')?.id}`)}
+                  >
+                    <Text style={styles.arrowIconWhite}>{`>`}</Text>
+                  </TouchableOpacity>
                 </View>
-                <TouchableOpacity style={styles.arrowButton}>
-                  <Text style={styles.arrowIconWhite}>{`>`}</Text>
-                </TouchableOpacity>
+                <Image 
+                  source={require("../../assets/images/box-transparent.png")} 
+                  style={styles.boxImage} 
+                  resizeMode="contain"
+                />
+              </LinearGradient>
+            ) : (
+              <View style={styles.noShipmentCard}>
+                <Text style={styles.noShipmentText}>Aucune livraison en cours</Text>
               </View>
-              <Image source={require("../../assets/images/box-transparent.png")} style={styles.boxImage} />
-            </LinearGradient>
+            )}
 
             {/* --- Recent Shipments -- */}
             <View style={styles.recentShipmentHeader}>
-              <Text style={styles.sectionTitle}>Recent Shipments</Text>
-              <TouchableOpacity>
-                <Text style={styles.viewMore}>View More</Text>
+              <Text style={styles.sectionTitle}>Livraisons récentes</Text>
+              <TouchableOpacity onPress={() => router.push('/history')}>
+                <Text style={styles.viewMore}>Voir plus</Text>
               </TouchableOpacity>
             </View>
 
@@ -146,7 +248,7 @@ export default function HomeScreen() {
             <View style={styles.searchBar}>
               <SearchIcon color={LIGHT_COLORS.icon} />
               <TextInput
-                placeholder="Enter receipt number"
+                placeholder="Rechercher un numéro de suivi"
                 placeholderTextColor={LIGHT_COLORS.icon}
                 style={styles.searchInput}
                 value={searchQuery}
@@ -156,7 +258,7 @@ export default function HomeScreen() {
 
             {/* --- Filters -- */}
             <View style={styles.filterContainer}>
-              {(["All", "Pending", "On Delivery", "Delivered"] as ShipmentStatus[]).map((status) => (
+              {(["Tous", "En attente", "En cours", "Livré"] as ShipmentStatus[]).map((status) => (
                 <TouchableOpacity
                   key={status}
                   style={[styles.filterButton, activeFilter === status && styles.activeFilterButton]}
@@ -172,6 +274,11 @@ export default function HomeScreen() {
         renderItem={renderShipmentItem}
         keyExtractor={(item) => item.id}
         showsVerticalScrollIndicator={false}
+        ListEmptyComponent={
+          <View style={styles.emptyContainer}>
+            <Text style={styles.emptyText}>Aucune livraison trouvée</Text>
+          </View>
+        }
       />
     </SafeAreaView>
   )
@@ -195,21 +302,39 @@ const createStyles = () => {
     userInfo: {
       flexDirection: "row",
       alignItems: "center",
+      flex: 1,
     },
     avatar: {
-      width: 50,
-      height: 50,
-      borderRadius: 25,
+      width: 60,
+      height: 60,
+      borderRadius: 30,
       marginRight: 15,
+    },
+    avatarPlaceholder: {
+      backgroundColor: LIGHT_COLORS.primary,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    avatarText: {
+      color: '#fff',
+      fontSize: 24,
+      fontWeight: 'bold',
     },
     greeting: {
       color: LIGHT_COLORS.text,
       fontSize: 18,
       fontWeight: "bold",
+      marginBottom: 2,
     },
     location: {
       color: LIGHT_COLORS.icon,
       fontSize: 14,
+      marginBottom: 2,
+    },
+    email: {
+      color: LIGHT_COLORS.icon,
+      fontSize: 12,
+      maxWidth: 200,
     },
     listHeaderContainer: {
       paddingHorizontal: 20,
@@ -341,6 +466,8 @@ const createStyles = () => {
     },
     shipmentDetails: {
       flex: 1,
+      marginRight: 10,
+      overflow: 'hidden',
     },
     shipmentName: {
       color: LIGHT_COLORS.text,
@@ -349,13 +476,62 @@ const createStyles = () => {
     },
     shipmentTrackingId: {
       color: LIGHT_COLORS.icon,
-      fontSize: 14,
-      marginTop: 5,
+      fontSize: 13,
+      marginTop: 2,
+    },
+    shipmentAddress: {
+      color: LIGHT_COLORS.text,
+      fontSize: 12,
+      opacity: 0.8,
+      marginTop: 2,
+    },
+    shipmentDate: {
+      color: LIGHT_COLORS.primary,
+      fontSize: 11,
+      marginTop: 3,
+      fontWeight: '500',
+    },
+    statusBadge: {
+      paddingHorizontal: 10,
+      paddingVertical: 4,
+      borderRadius: 12,
+      alignSelf: 'flex-start',
+      marginRight: 10,
+    },
+    statusText: {
+      fontSize: 12,
+      fontWeight: '600',
+    },
+    boldText: {
+      fontWeight: 'bold',
+    },
+    noShipmentCard: {
+      backgroundColor: LIGHT_COLORS.secondary,
+      borderRadius: 20,
+      padding: 20,
+      alignItems: 'center',
+      justifyContent: 'center',
+      minHeight: 120,
+      marginBottom: 20,
+    },
+    noShipmentText: {
+      color: LIGHT_COLORS.icon,
+      fontSize: 16,
+      textAlign: 'center',
     },
     arrowIcon: {
       color: LIGHT_COLORS.icon,
       fontSize: 18,
       fontWeight: "bold",
     },
+    emptyContainer: {
+      padding: 20,
+      alignItems: 'center',
+    },
+    emptyText: {
+      color: LIGHT_COLORS.icon,
+      fontSize: 16,
+    },
   })
 }
+

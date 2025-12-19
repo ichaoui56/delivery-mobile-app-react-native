@@ -1,20 +1,20 @@
 "use client"
 
-import { useState } from "react"
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  ScrollView,
-  SafeAreaView,
-  TextInput,
-  Modal,
-  Alert,
-} from "react-native"
-import { useLocalSearchParams, useRouter } from "expo-router"
 import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
+import { useLocalSearchParams, useRouter } from "expo-router"
+import { useState } from "react"
+import {
+    Alert,
+    Modal,
+    SafeAreaView,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
+} from "react-native"
 
 interface ReasonModalState {
   visible: boolean
@@ -32,14 +32,14 @@ const OrderDetailsScreen = () => {
     orderId: `ORD${id}`,
     customerName: "John Doe",
     deliveryAddress: "123 Main St, Anytown, USA",
-    status: "In Progress",
+    status: "En cours",
     estimatedDelivery: "11:00 AM",
     items: [
       { id: "1", name: "Product A", quantity: 2, price: 10 },
       { id: "2", name: "Product B", quantity: 1, price: 25 },
     ],
     totalPrice: 45,
-    instructions: "Leave at the front door.",
+    instructions: "Laisser à la porte d'entrée.",
     latitude: 40.7128,
     longitude: -74.006,
   }
@@ -51,13 +51,13 @@ const OrderDetailsScreen = () => {
 
   const handleSubmitReason = () => {
     if (reasonText.trim()) {
-      const action = reasonModal.type === "delay" ? "DELAYED" : "CANCELLED"
-      Alert.alert("Confirmed", `Order has been marked as ${action}.\n\nReason: ${reasonText}`, [
+      const action = reasonModal.type === "delay" ? "RETARDÉE" : "ANNULÉE"
+      Alert.alert("Confirmé", `La commande a été marquée comme ${action}.\n\nRaison : ${reasonText}`, [
         { text: "OK", onPress: () => setReasonModal({ visible: false, type: null }) },
       ])
       setReasonText("")
     } else {
-      Alert.alert("Please enter a reason before submitting.")
+      Alert.alert("Veuillez saisir une raison avant d'envoyer.")
     }
   }
 
@@ -67,7 +67,7 @@ const OrderDetailsScreen = () => {
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <MaterialCommunityIcons name="arrow-left" size={24} color="#FFFFFF" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Order Details</Text>
+        <Text style={styles.headerTitle}>Détails de la commande</Text>
         <View style={styles.headerPlaceholder} />
       </View>
 
@@ -85,13 +85,13 @@ const OrderDetailsScreen = () => {
           </View>
           <View style={styles.deliveryInfo}>
             <MaterialCommunityIcons name="clock" size={16} color="#0f8fd5" />
-            <Text style={styles.deliveryTime}>Est. Delivery: {order.estimatedDelivery}</Text>
+            <Text style={styles.deliveryTime}>Livraison estimée : {order.estimatedDelivery}</Text>
           </View>
         </LinearGradient>
 
         {/* Customer Information */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Customer Information</Text>
+          <Text style={styles.cardTitle}>Informations client</Text>
           <View style={styles.infoRow}>
             <MaterialCommunityIcons name="account" size={18} color="#0f8fd5" />
             <Text style={styles.infoText}>{order.customerName}</Text>
@@ -104,12 +104,12 @@ const OrderDetailsScreen = () => {
 
         {/* Order Items */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Order Summary</Text>
+          <Text style={styles.cardTitle}>Récapitulatif de la commande</Text>
           {order.items.map((item) => (
             <View key={item.id} style={styles.itemRow}>
               <View style={styles.itemInfo}>
                 <Text style={styles.itemName}>{item.name}</Text>
-                <Text style={styles.itemQuantity}>Qty: {item.quantity}</Text>
+                <Text style={styles.itemQuantity}>Qté : {item.quantity}</Text>
               </View>
               <Text style={styles.itemPrice}>${(item.price * item.quantity).toFixed(2)}</Text>
             </View>
@@ -123,7 +123,7 @@ const OrderDetailsScreen = () => {
 
         {/* Instructions */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Delivery Instructions</Text>
+          <Text style={styles.cardTitle}>Instructions de livraison</Text>
           <View style={styles.instructionBox}>
             <MaterialCommunityIcons name="information" size={16} color="#0f8fd5" />
             <Text style={styles.instructionText}>{order.instructions}</Text>
@@ -134,25 +134,25 @@ const OrderDetailsScreen = () => {
         <View style={styles.actionsContainer}>
           <TouchableOpacity style={[styles.actionButton, styles.acceptButton]}>
             <MaterialCommunityIcons name="check" size={20} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Accept Order</Text>
+            <Text style={styles.actionButtonText}>Accepter</Text>
           </TouchableOpacity>
           <TouchableOpacity style={[styles.actionButton, styles.navigateButton]}>
             <MaterialCommunityIcons name="navigation" size={20} color="#FFFFFF" />
-            <Text style={styles.actionButtonText}>Navigate</Text>
+            <Text style={styles.actionButtonText}>Naviguer</Text>
           </TouchableOpacity>
         </View>
 
         {/* Status Update Section */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Update Status</Text>
+          <Text style={styles.cardTitle}>Mettre à jour le statut</Text>
           <View style={styles.statusButtonsGrid}>
             <TouchableOpacity style={[styles.statusButton, styles.statusButtonPrimary]}>
               <MaterialCommunityIcons name="package-up" size={18} color="#FFFFFF" />
-              <Text style={styles.statusButtonText}>Picked Up</Text>
+              <Text style={styles.statusButtonText}>Récupérée</Text>
             </TouchableOpacity>
             <TouchableOpacity style={[styles.statusButton, styles.statusButtonSuccess]}>
               <MaterialCommunityIcons name="check-circle" size={18} color="#FFFFFF" />
-              <Text style={styles.statusButtonText}>Delivered</Text>
+              <Text style={styles.statusButtonText}>Livrée</Text>
             </TouchableOpacity>
           </View>
 
@@ -162,14 +162,14 @@ const OrderDetailsScreen = () => {
               onPress={() => handleOpenReasonModal("delay")}
             >
               <MaterialCommunityIcons name="clock-alert" size={18} color="#FFFFFF" />
-              <Text style={styles.statusButtonText}>Delay</Text>
+              <Text style={styles.statusButtonText}>Retard</Text>
             </TouchableOpacity>
             <TouchableOpacity
               style={[styles.statusButton, styles.statusButtonDanger]}
               onPress={() => handleOpenReasonModal("cancel")}
             >
               <MaterialCommunityIcons name="close-circle" size={18} color="#FFFFFF" />
-              <Text style={styles.statusButtonText}>Cancel</Text>
+              <Text style={styles.statusButtonText}>Annuler</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -181,7 +181,7 @@ const OrderDetailsScreen = () => {
           <View style={styles.modalContent}>
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>
-                {reasonModal.type === "delay" ? "Delay Reason" : "Cancellation Reason"}
+                {reasonModal.type === "delay" ? "Raison du retard" : "Raison de l'annulation"}
               </Text>
               <TouchableOpacity onPress={() => setReasonModal({ visible: false, type: null })}>
                 <MaterialCommunityIcons name="close" size={24} color="#1A1A1A" />
@@ -189,10 +189,10 @@ const OrderDetailsScreen = () => {
             </View>
 
             <View style={styles.modalBody}>
-              <Text style={styles.modalLabel}>Please provide a reason:</Text>
+              <Text style={styles.modalLabel}>Veuillez indiquer une raison :</Text>
               <TextInput
                 style={styles.reasonInput}
-                placeholder="Enter your reason here..."
+                placeholder="Saisissez votre raison ici..."
                 placeholderTextColor="#999"
                 multiline
                 numberOfLines={4}
@@ -207,10 +207,10 @@ const OrderDetailsScreen = () => {
                 style={styles.modalButtonCancel}
                 onPress={() => setReasonModal({ visible: false, type: null })}
               >
-                <Text style={styles.modalButtonTextCancel}>Cancel</Text>
+                <Text style={styles.modalButtonTextCancel}>Annuler</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.modalButtonSubmit} onPress={handleSubmitReason}>
-                <Text style={styles.modalButtonTextSubmit}>Submit</Text>
+                <Text style={styles.modalButtonTextSubmit}>Envoyer</Text>
               </TouchableOpacity>
             </View>
           </View>

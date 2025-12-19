@@ -1,9 +1,9 @@
 "use client"
 
-import { useState } from "react"
-import { View, Text, StyleSheet, SafeAreaView, TouchableOpacity, ScrollView } from "react-native"
 import { MaterialCommunityIcons } from "@expo/vector-icons"
 import { LinearGradient } from "expo-linear-gradient"
+import { useState } from "react"
+import { SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native"
 
 interface Order {
   id: string
@@ -16,6 +16,9 @@ interface Order {
 
 const MapScreen = () => {
   const [selectedOrder, setSelectedOrder] = useState<string | null>(null)
+
+  const markerColors = ["#0f8fd5", "#28a745", "#FFA500", "#E91E63"]
+  const getMarkerColor = (index: number) => markerColors[index % markerColors.length]
 
   const orders: Order[] = [
     {
@@ -55,10 +58,10 @@ const MapScreen = () => {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Delivery Map</Text>
+        <Text style={styles.headerTitle}>Carte des livraisons</Text>
         <View style={styles.headerSubtitle}>
           <MaterialCommunityIcons name="map-marker" size={16} color="#0f8fd5" />
-          <Text style={styles.subtitleText}>{orders.length} Active Orders</Text>
+          <Text style={styles.subtitleText}>{orders.length} commandes actives</Text>
         </View>
       </View>
 
@@ -67,15 +70,15 @@ const MapScreen = () => {
         <View style={styles.mapContent}>
           <View style={styles.mapPlaceholder}>
             <MaterialCommunityIcons name="map" size={100} color="#B3D9E8" />
-            <Text style={styles.mapText}>Interactive Map View</Text>
-            <Text style={styles.mapSubtext}>Showing {orders.length} delivery locations</Text>
+            <Text style={styles.mapText}>Vue carte interactive</Text>
+            <Text style={styles.mapSubtext}>Affichage de {orders.length} lieux de livraison</Text>
           </View>
 
           {/* Map Markers Legend */}
           <View style={styles.markersLegend}>
             {orders.map((order, index) => (
               <View key={order.id} style={styles.legendMarker}>
-                <View style={[styles.markerDot, { backgroundColor: this.getMarkerColor(index) }]}>
+                <View style={[styles.markerDot, { backgroundColor: getMarkerColor(index) }]}>
                   <Text style={styles.markerNumber}>{index + 1}</Text>
                 </View>
                 <Text style={styles.markerLabel} numberOfLines={1}>
@@ -89,7 +92,7 @@ const MapScreen = () => {
 
       {/* Orders List */}
       <ScrollView style={styles.ordersContainer} showsVerticalScrollIndicator={false}>
-        <Text style={styles.ordersTitle}>Delivery Orders</Text>
+        <Text style={styles.ordersTitle}>Commandes à livrer</Text>
         {orders.map((order, index) => (
           <TouchableOpacity
             key={order.id}
@@ -98,7 +101,7 @@ const MapScreen = () => {
             activeOpacity={0.7}
           >
             <View style={styles.markerContainer}>
-              <View style={[styles.markerBadge, { backgroundColor: this.getMarkerColor(index) }]}>
+              <View style={[styles.markerBadge, { backgroundColor: getMarkerColor(index) }]}>
                 <Text style={styles.markerBadgeText}>{index + 1}</Text>
               </View>
             </View>
@@ -113,7 +116,7 @@ const MapScreen = () => {
                   <MaterialCommunityIcons name="clock" size={11} color="#666" /> {order.deliveryTime}
                 </Text>
                 <Text style={styles.metaText}>
-                  <MaterialCommunityIcons name="coordinates" size={11} color="#666" />
+                  <MaterialCommunityIcons name="crosshairs-gps" size={11} color="#666" />
                   {order.latitude.toFixed(2)}, {order.longitude.toFixed(2)}
                 </Text>
               </View>
@@ -292,11 +295,6 @@ const styles = StyleSheet.create({
     fontWeight: "500",
   },
 
-  // Helper method colors for markers
-  getMarkerColor: (index: number) => {
-    const colors = ["#0f8fd5", "#28a745", "#FFA500", "#E91E63"]
-    return colors[index % colors.length]
-  },
 })
 
 export default MapScreen
