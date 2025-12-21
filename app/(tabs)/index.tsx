@@ -3,15 +3,25 @@
 import { useAuth } from "@/lib/auth-provider"
 import { LinearGradient } from "expo-linear-gradient"
 import { useRouter } from "expo-router"
-import { useState } from "react"
-import { FlatList, Image, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native"
+import { useEffect, useState } from "react"
+import { FlatList, Image, SafeAreaView, StyleSheet, Text, TextInput, TouchableOpacity, View, ActivityIndicator } from "react-native"
 import Svg, { Line, Path, Polyline } from "react-native-svg"
+import { apiLatestOrders, Order, OrderStatus as ApiOrderStatus, getAuthToken } from "@/lib/mobile-auth"
 
 // --- SVG Icons ---
 const BellIcon = ({ size = 24, color = "#000000" }) => (
   <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
     <Path
       d="M12 22C13.1 22 14 21.1 14 20H10C10 21.1 10.9 22 12 22ZM18 16V11C18 7.93 16.37 5.36 13.5 4.68V4C13.5 3.17 12.83 2.5 12 2.5C11.17 2.5 10.5 3.17 10.5 4V4.68C7.64 5.36 6 7.92 6 11V16L4 18V19H20V18L18 16Z"
+      fill={color}
+    />
+  </Svg>
+)
+
+const RefreshIcon = ({ size = 24, color = "#000000" }) => (
+  <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
+    <Path
+      d="M17.65 6.35C16.2 4.9 14.21 4 12 4c-4.42 0-7.99 3.58-7.99 8s3.57 8 7.99 8c3.73 0 6.84-2.55 7.73-6h-2.08c-.82 2.33-3.04 4-5.65 4-3.31 0-6-2.69-6-6s2.69-6 6-6c1.66 0 3.14.69 4.22 1.78L13 11h7V4l-2.35 2.35z"
       fill={color}
     />
   </Svg>
@@ -46,56 +56,6 @@ const SearchIcon = ({ size = 20, color = "#A0A0A0" }) => (
 // --- Interfaces ---
 type ShipmentStatus = "Tous" | "En attente" | "En cours" | "Livré"
 
-interface Shipment {
-  id: string
-  name: string
-  trackingId: string
-  status: ShipmentStatus
-  address: string
-  city: string
-  date: string
-}
-
-// --- Mock Data ---
-const mockShipments: Shipment[] = [
-  { 
-    id: "1", 
-    name: "MacBook Pro 2022", 
-    trackingId: "V789456AR123", 
-    status: "En cours",
-    address: "123 Rue de la Paix",
-    city: "Paris",
-    date: "Aujourd'hui, 10:30"
-  },
-  { 
-    id: "2", 
-    name: "iPhone 14 Pro Max (Violet)", 
-    trackingId: "V789456AR124", 
-    status: "En attente",
-    address: "456 Avenue des Champs-Élysées",
-    city: "Lyon",
-    date: "Demain, 09:15"
-  },
-  { 
-    id: "3", 
-    name: "Casque Sony WH-1000XM5", 
-    trackingId: "V789456AR125", 
-    status: "Livré",
-    address: "789 Boulevard Saint-Germain",
-    city: "Marseille",
-    date: "Hier, 14:45"
-  },
-  { 
-    id: "4", 
-    name: "Écran de jeu incurvé Samsung 49\"", 
-    trackingId: "V789456AR126", 
-    status: "En cours",
-    address: "101 Rue du Faubourg Saint-Honoré",
-    city: "Toulouse",
-    date: "Aujourd'hui, 11:20"
-  },
-]
-
 // --- Light Theme Colors ---
 const LIGHT_COLORS = {
   background: "#FFFFFF",
@@ -107,6 +67,45 @@ const LIGHT_COLORS = {
   secondary: "#F3F4F6",
 }
 
+// Helper function to map API status to display status
+const mapApiStatusToDisplayStatus = (status: ApiOrderStatus): ShipmentStatus => {
+  switch (status) {
+    case 'PENDING':
+    case 'ACCEPTED':
+      return 'En attente'
+    case 'ASSIGNED_TO_DELIVERY':
+      return 'En cours'
+    case 'DELIVERED':
+      return 'Livré'
+    default:
+      return 'En attente'
+  }
+}
+
+// Helper function to format date
+const formatDate = (dateString: string): string => {
+  const date = new Date(dateString)
+  const now = new Date()
+  const diffTime = Math.abs(now.getTime() - date.getTime())
+  const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24))
+  
+  if (diffDays === 0) {
+    return `Aujourd'hui, ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+  } else if (diffDays === 1) {
+    return `Hier, ${date.toLocaleTimeString('fr-FR', { hour: '2-digit', minute: '2-digit' })}`
+  } else {
+    return date.toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' })
+  }
+}
+
+// Helper function to get product names from order
+const getOrderProductNames = (order: Order): string => {
+  const productNames = order.orderItems.map(item => item.product.name)
+  if (productNames.length === 0) return 'Commande'
+  if (productNames.length === 1) return productNames[0]
+  return `${productNames[0]} +${productNames.length - 1} autres`
+}
+
 // --- Main Component ---
 export default function HomeScreen() {
   const router = useRouter()
@@ -115,48 +114,101 @@ export default function HomeScreen() {
 
   const [activeFilter, setActiveFilter] = useState<ShipmentStatus>("Tous")
   const [searchQuery, setSearchQuery] = useState("")
+  const [orders, setOrders] = useState<Order[]>([])
+  const [loading, setLoading] = useState(true)
+  const [refreshing, setRefreshing] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   
   // Get user's first name or default to "Utilisateur"
   const firstName = user?.name?.split(' ')[0] || 'Utilisateur'
   const userCity = user?.deliveryMan?.city || 'Ville inconnue'
   const userEmail = user?.email || ''
 
-  const filteredShipments = mockShipments.filter((shipment) => {
-    const matchesFilter = activeFilter === "Tous" || shipment.status === activeFilter
+  // Fetch orders on mount
+  useEffect(() => {
+    fetchOrders()
+  }, [])
+
+  const fetchOrders = async () => {
+    try {
+      setLoading(true)
+      setError(null)
+      const token = await getAuthToken()
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+      const response = await apiLatestOrders(token)
+      setOrders(response.orders)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch orders')
+      console.error('Error fetching orders:', err)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  const handleRefresh = async () => {
+    try {
+      setRefreshing(true)
+      setError(null)
+      const token = await getAuthToken()
+      if (!token) {
+        throw new Error('No authentication token found')
+      }
+      const response = await apiLatestOrders(token)
+      setOrders(response.orders)
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to fetch orders')
+      console.error('Error fetching orders:', err)
+    } finally {
+      setRefreshing(false)
+    }
+  }
+
+  const filteredOrders = orders.filter((order) => {
+    const displayStatus = mapApiStatusToDisplayStatus(order.status)
+    const matchesFilter = activeFilter === "Tous" || displayStatus === activeFilter
+    const productNames = getOrderProductNames(order)
     const matchesSearch =
-      shipment.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shipment.trackingId.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      shipment.city.toLowerCase().includes(searchQuery.toLowerCase())
+      productNames.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.orderCode.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.city.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      order.customerName.toLowerCase().includes(searchQuery.toLowerCase())
     return matchesFilter && matchesSearch
   })
 
-  const renderShipmentItem = ({ item }: { item: Shipment }) => (
-    <TouchableOpacity style={styles.shipmentItem} onPress={() => router.push(`/order-details/${item.id}`)}>
-      <View style={styles.shipmentIconContainer}>
-        <BoxIcon />
-      </View>
-      <View style={styles.shipmentDetails}>
-        <Text style={styles.shipmentName} numberOfLines={1}>{item.name}</Text>
-        <Text style={styles.shipmentTrackingId}>
-          <Text style={styles.boldText}>N°: </Text>
-          {item.trackingId}
-        </Text>
-        <Text style={styles.shipmentAddress} numberOfLines={1}>
-          {item.address}, {item.city}
-        </Text>
-        <Text style={styles.shipmentDate}>{item.date}</Text>
-      </View>
-      <View style={[
-        styles.statusBadge,
-        { backgroundColor: `${getStatusColor(item.status)}1A` },
-      ]}>
-        <Text style={[styles.statusText, { color: getStatusColor(item.status) }]}>
-          {item.status}
-        </Text>
-      </View>
-      <Text style={styles.arrowIcon}>{`>`}</Text>
-    </TouchableOpacity>
-  )
+  const renderOrderItem = ({ item }: { item: Order }) => {
+    const displayStatus = mapApiStatusToDisplayStatus(item.status)
+    const productNames = getOrderProductNames(item)
+    
+    return (
+      <TouchableOpacity style={styles.shipmentItem} onPress={() => router.push(`/order-details/${item.id}`)}>
+        <View style={styles.shipmentIconContainer}>
+          <BoxIcon />
+        </View>
+        <View style={styles.shipmentDetails}>
+          <Text style={styles.shipmentName} numberOfLines={1}>{productNames}</Text>
+          <Text style={styles.shipmentTrackingId}>
+            <Text style={styles.boldText}>N°: </Text>
+            {item.orderCode}
+          </Text>
+          <Text style={styles.shipmentAddress} numberOfLines={1}>
+            {item.address}, {item.city}
+          </Text>
+          <Text style={styles.shipmentDate}>{formatDate(item.createdAt)}</Text>
+        </View>
+        <View style={[
+          styles.statusBadge,
+          { backgroundColor: `${getStatusColor(displayStatus)}1A` },
+        ]}>
+          <Text style={[styles.statusText, { color: getStatusColor(displayStatus) }]}>
+            {displayStatus}
+          </Text>
+        </View>
+        <Text style={styles.arrowIcon}>{">"}</Text>
+      </TouchableOpacity>
+    )
+  }
   
   const getStatusColor = (status: ShipmentStatus): string => {
     switch (status) {
@@ -170,6 +222,8 @@ export default function HomeScreen() {
         return '#808080';
     }
   }
+
+  const currentShipment = orders.find(o => mapApiStatusToDisplayStatus(o.status) === 'En cours')
 
   return (
     <SafeAreaView style={styles.container}>
@@ -196,90 +250,117 @@ export default function HomeScreen() {
             ) : null}
           </View>
         </View>
-        <TouchableOpacity>
-          <BellIcon color={LIGHT_COLORS.text} />
-        </TouchableOpacity>
+        <View style={styles.headerIcons}>
+          <TouchableOpacity 
+            onPress={handleRefresh} 
+            disabled={refreshing}
+            style={styles.iconButton}
+          >
+            {refreshing ? (
+              <ActivityIndicator size="small" color={LIGHT_COLORS.primary} />
+            ) : (
+              <RefreshIcon color={LIGHT_COLORS.text} />
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity>
+            <BellIcon color={LIGHT_COLORS.text} />
+          </TouchableOpacity>
+        </View>
       </View>
 
-      <FlatList
-        ListHeaderComponent={
-          <View style={styles.listHeaderContainer}>
-            {/* --- Current Shipping Card -- */}
-            <Text style={styles.sectionTitle}>Livraison en cours</Text>
-            {filteredShipments.filter(s => s.status === 'En cours').length > 0 ? (
-              <LinearGradient colors={["#0f8fd5", "#0a6ba8"]} style={styles.premiumCard}>
-                <View style={styles.cardContent}>
-                  <View>
-                    <Text style={styles.premiumTitle}>
-                      {filteredShipments.find(s => s.status === 'En cours')?.name || 'Colis en cours'}
-                    </Text>
-                    <Text style={styles.premiumId}>
-                      N°: {filteredShipments.find(s => s.status === 'En cours')?.trackingId || 'N/A'}
-                    </Text>
+      {loading ? (
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color={LIGHT_COLORS.primary} />
+          <Text style={styles.loadingText}>Chargement des commandes...</Text>
+        </View>
+      ) : error ? (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>{error}</Text>
+          <TouchableOpacity style={styles.retryButton} onPress={fetchOrders}>
+            <Text style={styles.retryButtonText}>Réessayer</Text>
+          </TouchableOpacity>
+        </View>
+      ) : (
+        <FlatList
+          ListHeaderComponent={
+            <View style={styles.listHeaderContainer}>
+              {/* --- Current Shipping Card -- */}
+              <Text style={styles.sectionTitle}>Livraison en cours</Text>
+              {currentShipment ? (
+                <LinearGradient colors={["#0f8fd5", "#0a6ba8"]} style={styles.premiumCard}>
+                  <View style={styles.cardContent}>
+                    <View>
+                      <Text style={styles.premiumTitle}>
+                        {getOrderProductNames(currentShipment)}
+                      </Text>
+                      <Text style={styles.premiumId}>
+                        N°: {currentShipment.orderCode}
+                      </Text>
+                    </View>
+                    <TouchableOpacity 
+                      style={styles.arrowButton}
+                      onPress={() => router.push(`/order-details/${currentShipment.id}`)}
+                    >
+                      <Text style={styles.arrowIconWhite}>{">"}</Text>
+                    </TouchableOpacity>
                   </View>
-                  <TouchableOpacity 
-                    style={styles.arrowButton}
-                    onPress={() => router.push(`/order-details/${filteredShipments.find(s => s.status === 'En cours')?.id}`)}
-                  >
-                    <Text style={styles.arrowIconWhite}>{`>`}</Text>
-                  </TouchableOpacity>
+                  <Image 
+                    source={require("../../assets/images/box-transparent.png")} 
+                    style={styles.boxImage} 
+                    resizeMode="contain"
+                  />
+                </LinearGradient>
+              ) : (
+                <View style={styles.noShipmentCard}>
+                  <Text style={styles.noShipmentText}>Aucune livraison en cours</Text>
                 </View>
-                <Image 
-                  source={require("../../assets/images/box-transparent.png")} 
-                  style={styles.boxImage} 
-                  resizeMode="contain"
-                />
-              </LinearGradient>
-            ) : (
-              <View style={styles.noShipmentCard}>
-                <Text style={styles.noShipmentText}>Aucune livraison en cours</Text>
-              </View>
-            )}
+              )}
 
-            {/* --- Recent Shipments -- */}
-            <View style={styles.recentShipmentHeader}>
-              <Text style={styles.sectionTitle}>Livraisons récentes</Text>
-              <TouchableOpacity onPress={() => router.push('/history')}>
-                <Text style={styles.viewMore}>Voir plus</Text>
-              </TouchableOpacity>
-            </View>
-
-            {/* --- Search Bar -- */}
-            <View style={styles.searchBar}>
-              <SearchIcon color={LIGHT_COLORS.icon} />
-              <TextInput
-                placeholder="Rechercher un numéro de suivi"
-                placeholderTextColor={LIGHT_COLORS.icon}
-                style={styles.searchInput}
-                value={searchQuery}
-                onChangeText={setSearchQuery}
-              />
-            </View>
-
-            {/* --- Filters -- */}
-            <View style={styles.filterContainer}>
-              {(["Tous", "En attente", "En cours", "Livré"] as ShipmentStatus[]).map((status) => (
-                <TouchableOpacity
-                  key={status}
-                  style={[styles.filterButton, activeFilter === status && styles.activeFilterButton]}
-                  onPress={() => setActiveFilter(status)}
-                >
-                  <Text style={[styles.filterText, activeFilter === status && styles.activeFilterText]}>{status}</Text>
+              {/* --- Recent Shipments -- */}
+              <View style={styles.recentShipmentHeader}>
+                <Text style={styles.sectionTitle}>Livraisons récentes</Text>
+                <TouchableOpacity onPress={() => router.push('/history')}>
+                  <Text style={styles.viewMore}>Voir plus</Text>
                 </TouchableOpacity>
-              ))}
+              </View>
+
+              {/* --- Search Bar -- */}
+              <View style={styles.searchBar}>
+                <SearchIcon color={LIGHT_COLORS.icon} />
+                <TextInput
+                  placeholder="Rechercher un numéro de suivi"
+                  placeholderTextColor={LIGHT_COLORS.icon}
+                  style={styles.searchInput}
+                  value={searchQuery}
+                  onChangeText={setSearchQuery}
+                />
+              </View>
+
+              {/* --- Filters -- */}
+              <View style={styles.filterContainer}>
+                {(["Tous", "En attente", "En cours", "Livré"] as ShipmentStatus[]).map((status) => (
+                  <TouchableOpacity
+                    key={status}
+                    style={[styles.filterButton, activeFilter === status && styles.activeFilterButton]}
+                    onPress={() => setActiveFilter(status)}
+                  >
+                    <Text style={[styles.filterText, activeFilter === status && styles.activeFilterText]}>{status}</Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
             </View>
-          </View>
-        }
-        data={filteredShipments}
-        renderItem={renderShipmentItem}
-        keyExtractor={(item) => item.id}
-        showsVerticalScrollIndicator={false}
-        ListEmptyComponent={
-          <View style={styles.emptyContainer}>
-            <Text style={styles.emptyText}>Aucune livraison trouvée</Text>
-          </View>
-        }
-      />
+          }
+          data={filteredOrders}
+          renderItem={renderOrderItem}
+          keyExtractor={(item) => item.id.toString()}
+          showsVerticalScrollIndicator={false}
+          ListEmptyComponent={
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>Aucune livraison trouvée</Text>
+            </View>
+          }
+        />
+      )}
     </SafeAreaView>
   )
 }
@@ -335,6 +416,17 @@ const createStyles = () => {
       color: LIGHT_COLORS.icon,
       fontSize: 12,
       maxWidth: 200,
+    },
+    headerIcons: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 15,
+    },
+    iconButton: {
+      width: 24,
+      height: 24,
+      justifyContent: 'center',
+      alignItems: 'center',
     },
     listHeaderContainer: {
       paddingHorizontal: 20,
@@ -532,6 +624,38 @@ const createStyles = () => {
       color: LIGHT_COLORS.icon,
       fontSize: 16,
     },
+    loadingContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    loadingText: {
+      marginTop: 10,
+      color: LIGHT_COLORS.icon,
+      fontSize: 16,
+    },
+    errorContainer: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      paddingHorizontal: 20,
+    },
+    errorText: {
+      color: '#FF0000',
+      fontSize: 16,
+      textAlign: 'center',
+      marginBottom: 20,
+    },
+    retryButton: {
+      backgroundColor: LIGHT_COLORS.primary,
+      paddingHorizontal: 30,
+      paddingVertical: 12,
+      borderRadius: 20,
+    },
+    retryButtonText: {
+      color: '#FFFFFF',
+      fontSize: 16,
+      fontWeight: 'bold',
+    },
   })
 }
-

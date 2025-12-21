@@ -161,8 +161,8 @@ export interface Order {
   deliveredAt: string | null
   updatedAt: string
   orderItems: OrderItem[]
-  merchant: Merchant
-  deliveryMan: DeliveryManInfo
+  merchant?: Merchant
+  deliveryMan?: DeliveryManInfo
 }
 
 export type OrdersResponse = {
@@ -211,4 +211,130 @@ export async function apiAllOrders(token: string): Promise<OrdersResponse> {
   }
 
   return body
+}
+
+export type OrderDetailsResponse = {
+  order: Order
+}
+
+export async function apiOrderDetails(token: string, orderId: number): Promise<OrderDetailsResponse> {
+  const res = await fetch(`${getApiBaseUrl()}/api/mobile/orders/${orderId}`, {
+    method: 'GET',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  })
+
+  const body = await readJsonSafe<OrderDetailsResponse>(res)
+
+  if (!res.ok) {
+    throw new Error('Failed to fetch order details')
+  }
+
+  if (!body?.order) {
+    throw new Error('Invalid order details response')
+  }
+
+  return body
+}
+
+export type AcceptOrderResponse = {
+  success: boolean
+  message: string
+  order: {
+    id: number
+    orderCode: string
+    status: string
+    deliveryManId: number
+  }
+}
+
+export async function apiAcceptOrder(token: string, orderId: number): Promise<AcceptOrderResponse> {
+  const res = await fetch(`${getApiBaseUrl()}/api/mobile/orders/${orderId}/accept`, {
+    method: 'POST',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    }
+  })
+
+  const body = await readJsonSafe<ApiErrorBody & AcceptOrderResponse>(res)
+
+  if (!res.ok) {
+    const message = body?.error || 'Failed to accept order'
+    throw new Error(message)
+  }
+
+  if (!body?.success) {
+    throw new Error('Invalid accept order response')
+  }
+
+  return body
+}
+
+export type UpdateOrderStatusRequest = {
+  status: 'REPORTED' | 'REJECTED' | 'CANCELLED' | 'DELIVERED'
+  reason?: string
+  notes?: string
+  location?: string
+}
+
+export type UpdateOrderStatusResponse = {
+  success: boolean
+  message: string
+  order: {
+    id: number
+    orderCode: string
+    status: string
+    attemptNumber: number
+  }
+}
+
+export async function apiUpdateOrderStatus(
+  token: string,
+  orderId: number,
+  data: UpdateOrderStatusRequest
+): Promise<UpdateOrderStatusResponse> {
+  const res = await fetch(`${getApiBaseUrl()}/api/mobile/orders/${orderId}/status`, {
+    method: 'PATCH',
+    headers: { 
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify(data)
+  })
+
+  const body = await readJsonSafe<ApiErrorBody & UpdateOrderStatusResponse>(res)
+
+  if (!res.ok) {
+    const message = body?.error || 'Failed to update order status'
+    console.error('API Error Response:', { status: res.status, body })
+    throw new Error(message)
+  }
+
+  // Log response for debugging
+  console.log('Update status response:', body)
+
+  // Handle response - backend returns success field, but be lenient if structure differs
+  if (body) {
+    // Check if response has the expected structure
+    if (body.success !== undefined || body.order) {
+      return {
+        success: body.success ?? true,
+        message: body.message || 'Order status updated successfully',
+        order: body.order || {
+          id: orderId,
+          orderCode: '',
+          status: data.status,
+          attemptNumber: 0,
+        }
+      }
+    }
+    
+    // If body exists but doesn't match expected structure, log it
+    console.warn('Unexpected response structure:', body)
+  }
+
+  throw new Error('Invalid update order status response')
 }
